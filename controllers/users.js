@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-
+import bcrypt from 'bcryptjs'
 const { User } = db;
 
 export async function getAllUsers(req, res) {
@@ -12,10 +12,16 @@ export async function getAllUsers(req, res) {
     }
 }
 
+//Register user
 export async function createUser(req, res) {
     try {
-        const newUser = await User.create(req.body);
-        res.status(201).json(newUser);
+        const { password } = req.body;  // Destructure password from request body
+        bcrypt.hash(password, 10).then(async (hash) => {
+            // Replace plain password with hashed password
+            req.body.password = hash;
+            const newUser = await User.create(req.body);
+            res.status(201).json(newUser);
+        });
     } catch (err) {
         console.error('Error creating user:', err);
         res.status(500).json({ error: 'Internal server error' });

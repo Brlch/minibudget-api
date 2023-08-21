@@ -9,6 +9,8 @@ const jwtSecret =
 
 export async function loginUser(req, res) {
     try {
+        console.log("Attempt login")
+        console.log(req.body)
         const user = await User.findOne({ where: { username: req.body.username } });
         if (!user) {
             return res.status(401).json({ error: 'Authentication failed. User not found.' });

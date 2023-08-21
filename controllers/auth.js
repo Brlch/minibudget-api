@@ -1,11 +1,11 @@
 import db from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import '../config.js'; 
 
 const { User } = db;
 
-const jwtSecret =
-  "e3c5d9f9c0200ef05c65ea75b7d1d64e93ceceb25fce32ea98afbdbcf3dfeaf09b39c3";
+const jwtSecret = process.env.JWT_SECRET;
 
 export async function loginUser(req, res) {
     try {

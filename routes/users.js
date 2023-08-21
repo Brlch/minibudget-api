@@ -1,11 +1,13 @@
 import { Router } from 'express';
-const router = Router();
+import authenticateJWT from '../middlewares/authMiddleware.js';
 import { getAllUsers, createUser, getUserById, updateUser, deleteUser } from '../controllers/users.js';
 
-router.get('/', getAllUsers);
+const router = Router();
+
+router.get('/', authenticateJWT, getAllUsers);
 router.post('/', createUser);
-router.get('/:id', getUserById);
-router.put('/:id', updateUser);
-router.delete('/:id', deleteUser);
+router.get('/:id', authenticateJWT, getUserById);
+router.put('/:id', authenticateJWT, updateUser);
+router.delete('/:id', authenticateJWT, deleteUser);
 
 export default router;

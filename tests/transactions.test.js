@@ -13,18 +13,26 @@ const sequelize = new Sequelize('minibudget', 'postgres', 'root', {
 
 let userId;
 let transactionId;
+let token;
 
 describe('Transactions API', () => {
     before(async () => {
         await sequelize.authenticate();
 
-        // Create a user for the tests
+        // Register a user for the tests
         const uniqueUsername = 'testuser' + Date.now();
         const userResponse = await chai.request(app).post('/users').send({
             username: uniqueUsername,
             password: "password123"
         });
         userId = userResponse.body.id;
+
+        // Login with the user's credentials to get the JWT token
+        const loginResponse = await chai.request(app).post('/auth/login').send({
+            username: uniqueUsername,
+            password: "password123"
+        });
+        token = loginResponse.body.token;  // save the token for later use
     });
 
     after(async () => {
@@ -42,6 +50,7 @@ describe('Transactions API', () => {
         };
         chai.request(app)
             .post('/transactions')
+            .set('Authorization', `Bearer ${token}`)
             .send(transaction)
             .end((err, res) => {
                 transactionId = res.body.id;
@@ -61,6 +70,7 @@ describe('Transactions API', () => {
         };
         chai.request(app)
             .put(`/transactions/${transactionId}`)
+            .set('Authorization', `Bearer ${token}`)
             .send(updatedTransaction)
             .end((err, res) => {
                 expect(res).to.have.status(200);
@@ -73,6 +83,7 @@ describe('Transactions API', () => {
     it('should GET all transactions', (done) => {
         chai.request(app)
             .get('/transactions')
+            .set('Authorization', `Bearer ${token}`)
             .end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.body).to.be.a('array');
@@ -83,6 +94,7 @@ describe('Transactions API', () => {
     it('should GET all transactions for a user', (done) => {
         chai.request(app)
             .get(`/transactions/user/${userId}`)
+            .set('Authorization', `Bearer ${token}`)
             .end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.body).to.be.a('array');
@@ -96,6 +108,7 @@ describe('Transactions API', () => {
     it('should DELETE the updated transaction', (done) => {
         chai.request(app)
             .delete(`/transactions/${transactionId}`)
+            .set('Authorization', `Bearer ${token}`)
             .end((err, res) => {
                 expect(res).to.have.status(200);
                 expect(res.body).to.be.a('object');

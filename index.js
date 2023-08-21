@@ -3,8 +3,10 @@ import bodyParser from 'body-parser';
 import transactionsRoutes from './routes/transactions.js';
 import usersRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
+import './config.js'; 
 
 const app = express();
+
 
 // Middlewares
 app.use(bodyParser.json());

@@ -15,18 +15,36 @@ export async function getAllUsers(req, res) {
 //Register user
 export async function createUser(req, res) {
     try {
-        const { password } = req.body;  // Destructure password from request body
-        bcrypt.hash(password, 10).then(async (hash) => {
-            // Replace plain password with hashed password
-            req.body.password = hash;
-            const newUser = await User.create(req.body);
-            res.status(201).json(newUser);
+        const { username, password } = req.body;
+
+        // Check for existing user
+        const existingUser = await User.findOne({ where: { username } });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username already exists.' });
+        }
+
+        // Hash password and create user
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = await User.create({
+            ...req.body,
+            password: hashedPassword
         });
+
+        // Remove password (even hashed) from response for safety
+        const userResponse = newUser.toJSON();
+        delete userResponse.password;
+
+        res.status(201).json(userResponse);
     } catch (err) {
         console.error('Error creating user:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        if (err.name === 'SequelizeValidationError') {
+            res.status(400).json({ error: 'Validation error', details: err.errors });
+        } else {
+            res.status(500).json({ error: 'Internal server error' });
+        }
     }
 }
+
 
 export async function getUserById(req, res) {
     try {

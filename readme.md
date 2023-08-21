@@ -1,69 +1,88 @@
-Of course, here's the `README.md` content as a single code block:
-
 # MiniBudget API
 
-An API service for the MiniBudget app, which helps users manage a virtual wallet and set a daily budget based on monthly expenses.
+The backend API for the MiniBudget mobile application. Helps users to manage their virtual wallet, track transactions, and set daily budgets based on monthly expenses.
 
 ## Table of Contents
-1. [Introduction](#introduction)
-2. [Setup and Installation](#setup-and-installation)
-3. [Running Tests](#running-tests)
-4. [Roadmap](#roadmap)
-5. [Contributing](#contributing)
-6. [License](#license)
+- [Features](#features)
+- [Technologies Used](#technologies-used)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Setting up Environment Variables](#setting-up-environment-variables)
+  - [Running the Application](#running-the-application)
+- [Running Tests](#running-tests)
+- [Endpoints](#endpoints)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Introduction
-The MiniBudget API serves as the backend for the MiniBudget app, allowing users to register daily incomes and manage their budget from multiple devices. The API is built using Node.js, Express.js, and connects to a PostgreSQL database through Sequelize.
+## Features
+- User registration and authentication
+- Manage transactions (add, update, delete)
+- Get budget summaries
 
-## Setup and Installation
-
-### Prerequisites:
+## Technologies Used
 - Node.js
+- Express.js
 - PostgreSQL
+- Sequelize (ORM)
+- JSON Web Tokens (JWT) for authentication
 
-### Steps:
-1. **Clone the Repository**:
-   ```bash
-   git clone <repository-url>
-   cd minibudget-api
-   ```
+## Getting Started
 
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+### Prerequisites
+- Node.js and npm installed
+- PostgreSQL database
 
-3. **Setting up PostgreSQL**:
-   - Ensure PostgreSQL is installed and running.
-   - Create a database named `minibudget`.
-   - Set up the `postgres` user with the necessary password and permissions.
+### Installation
+1. Clone the repository:
+    ```bash
+    git clone [REPO_URL] minibudget-api
+    cd minibudget-api
+    ```
 
-4. **Environment Configuration**:
-   Make sure to create a `.env` file with relevant environment variables such as `DB_PASSWORD` for the PostgreSQL password. (For production, never commit this file to the repository.)
+2. Install the dependencies:
+    ```bash
+    npm install
+    ```
 
-5. **Running the API**:
-   ```bash
-   npm start
-   ```
+3. Set up PostgreSQL:
+    - Ensure PostgreSQL is installed and running.
+    - Create a new database named `minibudget`.
+
+### Setting up Environment Variables
+- Create a `.env` file at the root level.
+- Add the necessary environment variables. For instance:
+    ```
+    JWT_SECRET=your_jwt_secret
+    DB_USERNAME=your_db_username
+    DB_PASSWORD=your_db_password
+    ```
+
+### Running the Application
+Start the API server:
+```bash
+npm start
+```
 
 ## Running Tests
-To ensure the functionality of the API, we have set up tests using Mocha and Chai.
-Run the tests using:
+To ensure the integrity of the API, tests have been set up using Chai and Mocha. Run the tests with:
 ```bash
 npm test
 ```
 
-## Roadmap
-- Schema Design: Create tables for users, budgets, and transactions.
-- ORM Models: Use Sequelize to create models representing these tables.
-- API Endpoints: Implement routes for user registration, login, budget setup, and transactions.
-- Security: Implement JWTs, use HTTPS, and sanitize inputs.
+## Endpoints
+- `/users`: Endpoint for user registration, retrieval, updating, and deletion.
+- `/auth`: Endpoint for user authentication.
+- `/transactions`: Endpoint to manage user transactions.
+
+## Security
+- Uses JSON Web Tokens (JWT) for user authentication.
+- All passwords are hashed before being stored.
+- Inputs are validated before processing to prevent SQL injection and other vulnerabilities.
 
 ## Contributing
-Feel free to fork this project, submit a pull request or report any issues!
+We welcome contributions! Feel free to fork the repository and submit pull requests. For major changes, please open an issue first.
 
 ## License
-This project is licensed under the MIT License.
-```
-
-You can copy and paste the content directly into your `README.md` file.
+MIT License.

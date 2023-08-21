@@ -54,9 +54,12 @@ The backend API for the MiniBudget mobile application. Helps users to manage the
 - Create a `.env` file at the root level.
 - Add the necessary environment variables. For instance:
     ```
-    JWT_SECRET=your_jwt_secret
-    DB_USERNAME=your_db_username
-    DB_PASSWORD=your_db_password
+      JWT_SECRET=yourjwtsecret
+      DB_USERNAME=yourdbusername
+      DB_PASSWORD=yourpassword
+      DB_DATABASE=yourdbname
+      DB_HOST=127.0.0.1
+      DB_DIALECT=postgres
     ```
 
 ### Running the Application

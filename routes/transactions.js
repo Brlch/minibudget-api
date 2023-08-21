@@ -1,12 +1,14 @@
 import { Router } from 'express';
-const router = Router();
+import authenticateJWT from '../middlewares/authMiddleware.js';
 import { getAllTransactions, create, getById, update, deleteTransaction, getTransactionsByUserId } from '../controllers/transactions.js';
 
-router.get('/', getAllTransactions);
-router.post('/', create);
-router.get('/user/:userId', getTransactionsByUserId);  // Moved this up
-router.get('/:id', getById);
-router.put('/:id', update);
-router.delete('/:id', deleteTransaction);
+const router = Router();
+
+router.get('/', authenticateJWT, getAllTransactions);
+router.post('/', authenticateJWT, create);
+router.get('/user/:userId', authenticateJWT, getTransactionsByUserId);
+router.get('/:id', authenticateJWT, getById);
+router.put('/:id', authenticateJWT, update);
+router.delete('/:id', authenticateJWT, deleteTransaction);
 
 export default router;

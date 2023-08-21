@@ -4,7 +4,7 @@ import Sequelize, { DataTypes } from 'sequelize';
 import { env as _env } from 'process';
 import { fileURLToPath } from 'url';
 import { dirname as pathDirname } from 'path';
-import configModule from "../config/config.json" assert { type: "json" };
+import '../config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathDirname(__filename);
@@ -12,9 +12,14 @@ const __dirname = pathDirname(__filename);
 const basename = _basename(__filename);
 const env = _env.NODE_ENV || 'development';
 
-// Since 'import' doesn't support dynamic paths, use 'import.meta.resolve' to get the full path
-
-const config = configModule[env];
+const config = {
+  username: _env.DB_USERNAME,
+  password: _env.DB_PASSWORD,
+  database: _env.DB_DATABASE,
+  host: _env.DB_HOST,
+  dialect: _env.DB_DIALECT,
+  use_env_variable: _env.USE_ENV_VARIABLE // If you have such a setting in your .env, you can keep it.
+};
 
 const db = {};
 

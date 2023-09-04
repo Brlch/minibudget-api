@@ -1,15 +1,10 @@
 import chai from 'chai';
 import chaiHttp from 'chai-http';
 import app from '../index.js';
-import { Sequelize } from 'sequelize';
+import sequelize from './testDbConnection.js';
 
 const { expect } = chai;
 chai.use(chaiHttp);
-
-const sequelize = new Sequelize('minibudget', 'postgres', 'root', {
-    host: 'localhost',
-    dialect: 'postgres'
-});
 
 
 describe('Users API', () => {

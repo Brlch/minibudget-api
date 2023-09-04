@@ -1,7 +1,7 @@
-import { Sequelize } from 'sequelize';
 import chai from 'chai';
 import chaiHttp from 'chai-http';
 import app from '../index.js';
+import sequelize from './testDbConnection.js';
 
 const { expect } = chai;
 chai.use(chaiHttp);
@@ -9,10 +9,7 @@ chai.use(chaiHttp);
 let testUserId;
 let testUsername;
 
-const sequelize = new Sequelize('minibudget', 'postgres', 'root', {
-    host: 'localhost',
-    dialect: 'postgres'
-});
+
 
 describe('Authentication API', () => {
     before(async () => {

@@ -1,12 +1,8 @@
-import { Sequelize } from 'sequelize';
 import { expect as _expect } from 'chai';
-
+import sequelize from './testDbConnection.js';
 const expect = _expect;
 
-const sequelize = new Sequelize('minibudget', 'postgres', 'root', {
-  host: 'localhost',
-  dialect: 'postgres'
-});
+
 
 describe('Database Connection Test', function() {
   it('should connect to the database successfully', function(done) {

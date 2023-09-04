@@ -32,5 +32,10 @@ jobs:
         SERVER_ENV_VARIABLES: ${{ secrets.SERVER_ENV_VARIABLES }}
       run: |
           ssh -o StrictHostKeyChecking=no -i ssh_key ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "echo '$SERVER_ENV_VARIABLES' > /var/www/api.myminibudget.com/.env"
-      
-      
+    - name: Run Database Migrations
+      run: |
+        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} '
+          cd /var/www/api.myminibudget.com
+          source .env
+          npx sequelize-cli db:migrate
+        '

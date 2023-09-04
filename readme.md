@@ -70,6 +70,31 @@ Start the API server:
 npm start
 ```
 
+## Database Migrations
+
+### Creating a New Migration
+
+Whenever you want to make changes to the database schema (like adding a new table or altering an existing one), create a new migration:
+
+```bash
+npm run migration:create -- --name your-migration-name
+```
+
+This will generate a new migration file inside the `migrations` folder. Define the desired changes within this file.
+
+### Applying Migrations
+
+```bash
+npm run migrate
+```
+
+### Reverting Migrations
+
+```bash
+npm run migrate:undo
+```
+
+
 ## Automated Deployment
 
 The application is automatically deployed using GitHub Actions. For this setup to work, the following secrets must be added to your GitHub repository:

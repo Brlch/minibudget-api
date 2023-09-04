@@ -13,6 +13,12 @@ export default (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    dailyBudget: {
+      type: DataTypes.DECIMAL(10, 2),  // DECIMAL type to store currency values
+      allowNull: true,  // Allow NULL in case some users don't set it immediately
+      defaultValue: null,  // Default value can be set if necessary
+      comment: 'Recommended daily budget amount for the user'
+    },
     // Add other fields as necessary
   }, {
     sequelize,

@@ -17,11 +17,14 @@
     "jsonwebtoken": "^9.0.1",
     "pg": "^8.11.2",
     "sequelize": "^6.32.1",
-    "sequelize-auto-migrations-v2": "^1.2.1"
+    "sequelize-auto-migrations-v2": "^1.2.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
     "chai": "^4.3.7",
-    "mocha": "^10.2.0"
+    "mocha": "^10.2.0",
+    "swagger-autogen": "^2.23.5"
   },
   "type": "module"
 }

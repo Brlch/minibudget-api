@@ -27,3 +27,7 @@ jobs:
       run: |
         rsync -a --delete . ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/var/www/api.myminibudget.com
         ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} 'cd /var/www/api.myminibudget.com && npm install && pm2 restart minibudget-api'
+    - name: Set up environment variables
+      run: |
+        echo "${{ secrets.SERVER_ENV_VARIABLES }}" > /var/www/api.myminibudget.com/.env
+      

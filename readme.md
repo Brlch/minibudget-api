@@ -77,8 +77,14 @@ The application is automatically deployed using GitHub Actions. For this setup t
 - `SERVER_SSH_KEY`: The SSH private key used to access the deployment server.
 - `SERVER_IP`: The IP address of the deployment server.
 - `SERVER_USER`: The SSH user for the deployment server.
+- `SERVER_ENV_VARIABLES`: The environment variables required for your application. This should contain key-value pairs as you'd find in a `.env` file. 
 
-Every push to the main branch will trigger this deployment process, which will sync the latest codebase to the server, install any new dependencies, and restart the application using PM2.
+Every push to the main branch will trigger this deployment process, which will:
+
+1. Sync the latest codebase to the server.
+2. Create (or replace) the `.env` file using the content from the `SERVER_ENV_VARIABLES` secret.
+3. Install any new dependencies.
+4. Restart the application using PM2.
 
 ## API Documentation with Swagger
 

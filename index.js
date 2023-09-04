@@ -5,11 +5,29 @@ import usersRoutes from './routes/users.js';
 import authRoutes from './routes/auth.js';
 import swaggerDocument from './docs/swagger/swagger-output.json' assert { type: "json" };
 import swaggerUi from 'swagger-ui-express';
+import cors from 'cors';
 
 import './config.js'; 
 
 const app = express();
 
+// CORS Configuration
+const allowedOrigins = ['http://api.myminibudget.com', 'https://api.myminibudget.com'];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (allowedOrigins.includes(origin) || !origin) { // allows localhost and defined origins
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
 
 // Middlewares
 app.use(bodyParser.json());

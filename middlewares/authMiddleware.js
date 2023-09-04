@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import '../config.js'; 
 
 const jwtSecret = process.env.JWT_SECRET;
-console.log("SECRETTTT",jwtSecret);
 function authenticateJWT(req, res, next) {
     const authHeader = req.headers.authorization;
 

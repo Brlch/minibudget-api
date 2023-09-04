@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://api.myminibudget.com/"
+      "url": "https://api.myminibudget.com/"
     }
   ],
   "paths": {

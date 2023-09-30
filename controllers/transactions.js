@@ -11,11 +11,20 @@ export async function getAllTransactions(req, res) {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
-
 export async function create(req, res) {
     try {
-        const transaction = await Transaction.create(req.body);
+
+        if (!req.user || !req.user.id) {
+            console.error('User ID missing from request');
+            return res.status(400).json({ error: 'User ID required' });
+        }
+        const transactionData = {
+            ...req.body,
+            userId: req.user.id
+        };
+        const transaction = await Transaction.create(transactionData);
         res.status(201).json(transaction);
+        
     } catch (err) {
         console.error('Error creating transaction:', err);
         res.status(500).json({ error: 'Internal server error' });
@@ -74,20 +83,14 @@ export async function getTransactionsByUserId(req, res) {
     try {
 
         const userId = req.params.userId;
-        
-        console.log("USER:::::::",userId);
+
         const transactions = await Transaction.findAll({
             where: { userId: userId }
         });
-        console.log("TTTTTT:::::::",transactions);
-
-        if (transactions.length === 0) {
-            return res.status(404).json({ message: "No transactions found for this user." });
-        }
 
         res.status(200).json(transactions);
     } catch (err) {
         console.error('Error retrieving transactions for user:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ msg: 'Internal server error', err: err });
     }
 }

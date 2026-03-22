@@ -27,16 +27,20 @@ export default function initTransactionModel(sequelize) {
       userId: {
         type: DataTypes.INTEGER,
         references: {
-          model: 'users', 
+          model: 'users',
           key: 'id'
         }
+      },
+      deletedAt: {
+        type: DataTypes.DATE
       }
     },
     {
       sequelize,
       modelName: 'Transaction',
       tableName: 'transactions',
-      timestamps: true
+      timestamps: true,
+      paranoid: true
     }
   );
 

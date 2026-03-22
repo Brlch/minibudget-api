@@ -1,10 +1,13 @@
 import db from '../models/index.js';
+import { Op } from 'sequelize';
 
 const { Transaction } = db;
 
 export async function getAllTransactions(req, res) {
     try {
-        const transactions = await Transaction.findAll();
+        const transactions = await Transaction.findAll({
+          where: { userId: req.user.id },
+        });
         res.status(200).json(transactions);
     } catch (err) {
         console.error('Error retrieving transactions:', err);
@@ -33,7 +36,13 @@ export async function create(req, res) {
 
 export async function getById(req, res) {
     try {
-        const transaction = await Transaction.findByPk(req.params.id);
+        const transaction = await Transaction.findOne({
+          where: {
+            id: req.params.id,
+            userId: req.user.id,
+          },
+        });
+
         if (transaction) {
             res.status(200).json(transaction);
         } else {
@@ -48,7 +57,10 @@ export async function getById(req, res) {
 export async function update(req, res) {
     try {
         const updated = await Transaction.update(req.body, {
-            where: { id: req.params.id }
+          where: {
+            id: req.params.id,
+            userId: req.user.id,
+          },
         });
 
         if (updated[0] === 0) {
@@ -65,9 +77,11 @@ export async function update(req, res) {
 export async function deleteTransaction(req, res) {
     try {
         const deleted = await Transaction.destroy({
-            where: { id: req.params.id }
+          where: {
+            id: req.params.id,
+            userId: req.user.id,
+          },
         });
-
         if (deleted) {
             res.status(200).json({ message: 'Transaction deleted successfully' });
         } else {
@@ -82,6 +96,10 @@ export async function deleteTransaction(req, res) {
 export async function getTransactionsByUserId(req, res) {
     try {
 
+        if (Number(req.params.userId) !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const userId = req.params.userId;
 
         const transactions = await Transaction.findAll({
@@ -94,3 +112,136 @@ export async function getTransactionsByUserId(req, res) {
         res.status(500).json({ msg: 'Internal server error', err: err });
     }
 }
+
+export const getTransactionsSince = async (req, res) => {
+const since = new Date(req.params.timestamp);
+
+if (isNaN(since.getTime())) {
+    return res.status(400).json({ error: 'Invalid timestamp' });
+}
+
+const transactions = await Transaction.findAll({
+    where: {
+        userId: req.user.id,
+        [Op.or]: [
+            { updatedAt: { [Op.gte]: since } },
+            { deletedAt: { [Op.gte]: since } },
+        ],
+        },
+    paranoid: false,
+    order: [['updatedAt', 'ASC']],
+});
+
+res.json({
+    transactions,
+    serverTime: new Date().toISOString(),
+});
+};
+
+export const syncTransactions = async (req, res) => {
+  const { transactions = [] } = req.body;
+
+  const created = [];
+  const updated = [];
+  const deleted = [];
+  const conflicts = [];
+
+  const userId = req.user.id;
+
+  // Helper: check if an ID is a valid numeric DB id
+  const isNumericId = v =>
+    typeof v === 'number' ||
+    (typeof v === 'string' && /^\d+$/.test(v));
+
+  for (const tx of transactions) {
+    /* ----------------------------------
+     * DELETE (only if server ID exists)
+     * ---------------------------------- */
+    if (tx.deletedAt && isNumericId(tx.id)) {
+      const count = await Transaction.destroy({
+        where: {
+          id: Number(tx.id),
+          userId,
+        },
+      });
+
+      if (count > 0) {
+        deleted.push(tx.id);
+      }
+
+      continue;
+    }
+
+    /* ----------------------------------
+     * UPDATE (only numeric IDs)
+     * ---------------------------------- */
+    if (isNumericId(tx.id)) {
+      const serverTx = await Transaction.findOne({
+        where: {
+          id: Number(tx.id),
+          userId,
+        },
+        paranoid: false,
+      });
+
+      if (!serverTx) {
+        continue;
+      }
+
+      // Conflict detection (server wins)
+      if (
+        tx.updatedAt &&
+        new Date(tx.updatedAt) < new Date(serverTx.updatedAt)
+      ) {
+        conflicts.push(tx.id);
+        continue;
+      }
+
+      const [count] = await Transaction.update(
+        {
+          date: tx.date,
+          amount: tx.amount,
+          type: tx.type,
+          description: tx.description,
+          deletedAt: tx.deletedAt ?? null,
+        },
+        {
+          where: {
+            id: Number(tx.id),
+            userId,
+          },
+          paranoid: false,
+        }
+      );
+
+      if (count > 0) {
+        updated.push(tx.id);
+      }
+
+      continue;
+    }
+
+    /* ----------------------------------
+     * CREATE (client-only IDs)
+     * ---------------------------------- */
+    const createdTx = await Transaction.create({
+      date: tx.date,
+      amount: tx.amount,
+      type: tx.type,
+      description: tx.description,
+      userId,
+    });
+
+    created.push({
+      clientId: tx.id ?? tx.clientId,
+      id: createdTx.id,
+    });
+  }
+
+  res.json({
+    created,
+    updated,
+    deleted,
+    conflicts,
+  });
+};

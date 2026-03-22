@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Sequelize } from 'sequelize';
 import '../config.js'; 
 
 // Create and export a new Sequelize connection

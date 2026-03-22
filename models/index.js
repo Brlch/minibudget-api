@@ -1,8 +1,8 @@
 import { readdirSync } from 'fs';
 import { basename as _basename, join } from 'path';
-import Sequelize, { DataTypes } from 'sequelize';
+import { Sequelize, DataTypes } from 'sequelize';
 import { env as _env } from 'process';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname as pathDirname } from 'path';
 import '../config.js';
 
@@ -42,7 +42,9 @@ const modelFiles = readdirSync(__dirname)
 
 for (const file of modelFiles) {
   const modelPath = join(__dirname, file);
-  const modelModule = await import(modelPath);
+  const modelUrl = pathToFileURL(modelPath).href;
+
+  const modelModule = await import(modelUrl);
   const model = modelModule.default(sequelize, DataTypes);
   db[model.name] = model;
 }

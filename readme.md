@@ -1,86 +1,138 @@
 # MiniBudget API
 
-The backend API for the MiniBudget mobile application. Helps users to manage their virtual wallet, track transactions, and set daily budgets based on monthly expenses.
+The backend API for the **MiniBudget** mobile application.
+It provides authentication, transaction management, budgeting features, and a **production-grade bi-directional sync system** designed for offline-first mobile apps.
+
+---
 
 ## Table of Contents
 - [Features](#features)
+- [Architecture Overview](#architecture-overview)
 - [Technologies Used](#technologies-used)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-  - [Setting up Environment Variables](#setting-up-environment-variables)
+  - [Environment Variables](#environment-variables)
   - [Running the Application](#running-the-application)
+- [Database & Migrations](#database--migrations)
+- [API Sync System](#api-sync-system)
+  - [Pull Sync](#pull-sync)
+  - [Push Sync](#push-sync)
+- [Testing & TDD](#testing--tdd)
 - [Automated Deployment](#automated-deployment)
-- [API Documentation with Swagger](#api-documentation-with-swagger)
-- [Running Tests](#running-tests)
-- [Endpoints](#endpoints)
+- [API Documentation (Swagger)](#api-documentation-swagger)
+- [Endpoints Overview](#endpoints-overview)
 - [Security](#security)
 - [Contributing](#contributing)
 - [License](#license)
 
+---
+
 ## Features
-- User registration and authentication
-- Manage transactions (add, update, delete)
-- Get budget summaries
+- User registration & authentication (JWT)
+- Transaction CRUD (income & expenses)
+- Daily / monthly budget tracking
+- **Offline-first sync**
+  - Incremental pull sync
+  - Bi-directional push sync
+  - Soft-delete aware
+- Fully tested API (Mocha + Chai + Supertest)
+
+---
+
+## Architecture Overview
+
+MiniBudget API is designed for **mobile clients that may be offline**.
+
+Key principles:
+- Server is **authoritative**
+- Client sync is **idempotent**
+- Deletions are **soft deletes**
+- Sync is **incremental and resumable**
+
+The API supports:
+- Pulling only changed data since last sync
+- Pushing creates, updates, and deletes from the client
+- Safe retries without duplication
+
+---
 
 ## Technologies Used
-- Node.js
+- Node.js (18+)
 - Express.js
 - PostgreSQL
-- Sequelize (ORM)
-- JSON Web Tokens (JWT) for authentication
+- Sequelize ORM
+- JWT Authentication
+- Mocha, Chai, Supertest (testing)
+- Swagger (API documentation)
+- GitHub Actions (CI/CD)
+
+---
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js and npm installed
-- PostgreSQL database
+- Node.js 18+
+- npm
+- PostgreSQL
+- Git
+
+---
 
 ### Installation
-1. Clone the repository:
-    ```bash
-    git clone [REPO_URL] minibudget-api
-    cd minibudget-api
-    ```
+```bash
+git clone [REPO_URL] minibudget-api
+cd minibudget-api
+npm install
+````
 
-2. Install the dependencies:
-    ```bash
-    npm install
-    ```
+---
 
-3. Set up PostgreSQL:
-    - Ensure PostgreSQL is installed and running.
-    - Create a new database named `minibudget`.
+### Environment Variables
 
-### Setting up Environment Variables
-- Create a `.env` file at the root level.
-- Add the necessary environment variables. For instance:
-    ```
-    JWT_SECRET=yourjwtsecret
-    DB_USERNAME=yourdbusername
-    DB_PASSWORD=yourpassword
-    DB_DATABASE=yourdbname
-    DB_HOST=127.0.0.1
-    DB_DIALECT=postgres
-    ```
+Create a `.env` file at the project root:
+
+```env
+NODE_ENV=development
+PORT=4000
+
+JWT_SECRET=your_jwt_secret
+
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_DATABASE=minibudget
+DB_HOST=127.0.0.1
+DB_DIALECT=postgres
+```
+
+---
 
 ### Running the Application
-Start the API server:
+
 ```bash
 npm start
 ```
 
-## Database Migrations
+The server will start at:
 
-### Creating a New Migration
-
-Whenever you want to make changes to the database schema (like adding a new table or altering an existing one), create a new migration:
-
-```bash
-npm run migration:create -- --name your-migration-name
+```
+http://localhost:4000
 ```
 
-This will generate a new migration file inside the `migrations` folder. Define the desired changes within this file.
+---
+
+## Database & Migrations
+
+### Creating a Migration
+
+```bash
+npm run migrate:create -- your-migration-name
+```
+
+> ⚠️ Note: This project uses **ESM**, but Sequelize CLI runs migrations as CommonJS.
+> Newly created migrations are automatically renamed to `.cjs` for compatibility.
+
+---
 
 ### Applying Migrations
 
@@ -88,58 +140,203 @@ This will generate a new migration file inside the `migrations` folder. Define t
 npm run migrate
 ```
 
-### Reverting Migrations
+### Reverting the Last Migration
 
 ```bash
 npm run migrate:undo
 ```
 
+---
 
-## Automated Deployment
+## API Sync System
 
-The application is automatically deployed using GitHub Actions. For this setup to work, the following secrets must be added to your GitHub repository:
+MiniBudget implements a **v2 bi-directional sync protocol**.
 
-- `SERVER_SSH_KEY`: The SSH private key used to access the deployment server.
-- `SERVER_IP`: The IP address of the deployment server.
-- `SERVER_USER`: The SSH user for the deployment server.
-- `SERVER_ENV_VARIABLES`: The environment variables required for your application. This should contain key-value pairs as you'd find in a `.env` file. 
+### Pull Sync
 
-Every push to the main branch will trigger this deployment process, which will:
+Fetch all changes since the last successful sync.
 
-1. Sync the latest codebase to the server.
-2. Create (or replace) the `.env` file using the content from the `SERVER_ENV_VARIABLES` secret.
-3. Install any new dependencies.
-4. Restart the application using PM2.
+```
+GET /transactions/since/:timestamp
+Authorization: Bearer <JWT>
+```
 
-## API Documentation with Swagger
+#### Rules
 
-The API documentation is auto-generated using `swagger-autogen`. The configuration and execution of this autogeneration is handled in the `middlewares/swaggerAutogen.js` file.
+* Inclusive sync:
 
-To access the API documentation, navigate to the root URL of the deployed application, e.g., `http://api.myminibudget.com`.
+  * `updatedAt >= since`
+  * `deletedAt >= since`
+* Soft-deleted records are included
+* Results are ordered deterministically
+* Response includes server time for next sync
 
-The main server file (`index.js`) integrates Swagger's UI middleware, which serves the auto-generated documentation using `swagger-ui-express`.
+#### Response
 
-## Running Tests
-To ensure the integrity of the API, tests have been set up using Chai and Mocha. Run the tests with:
+```json
+{
+  "transactions": [...],
+  "serverTime": "2025-01-01T12:00:00.000Z"
+}
+```
+
+Client should store `serverTime` and send it back as the next `since`.
+
+---
+
+### Push Sync
+
+Push local client changes to the server.
+
+```
+POST /transactions/sync
+Authorization: Bearer <JWT>
+```
+
+#### Payload
+
+```json
+{
+  "transactions": [
+    { "clientId": "local-1", ... },              // CREATE
+    { "id": 12, ... },                            // UPDATE
+    { "id": 13, "deletedAt": "2025-01-01T..." }  // DELETE
+  ]
+}
+```
+
+#### Response
+
+```json
+{
+  "created": [{ "clientId": "local-1", "id": 42 }],
+  "updated": [12],
+  "deleted": [13]
+}
+```
+
+#### Guarantees
+
+* User-scoped
+* Idempotent
+* Safe to retry
+* Server-authoritative
+
+---
+
+## Testing & TDD
+
+This project follows a **test-first (TDD-style) workflow**.
+
+### Tools
+
+* Mocha
+* Chai
+* Supertest
+
+### Running Tests
+
 ```bash
 npm test
 ```
 
-## Endpoints
-- `/users`: Endpoint for user registration, retrieval, updating, and deletion.
-- `/auth`: Endpoint for user authentication.
-- `/transactions`: Endpoint to manage user transactions.
+### Testing Philosophy
 
-## Security
-- Uses JSON Web Tokens (JWT) for user authentication.
-- All passwords are hashed before being stored.
-- Inputs are validated before processing to prevent SQL injection and other vulnerabilities.
+* Every endpoint is covered by integration tests
+* Sync behavior is tested incrementally:
 
-## Contributing
-We welcome contributions! Feel free to fork the repository and submit pull requests. For major changes, please open an issue first.
+  1. Auth
+  2. Empty responses
+  3. Creates
+  4. Updates
+  5. Deletes
+* Bugs are fixed by **adding tests first**, then code
 
-## License
-MIT License.
+This ensures confidence when refactoring sync logic.
+
+---
+
+## Automated Deployment
+
+Deployment is handled via **GitHub Actions**.
+
+### Required Secrets
+
+* `SERVER_SSH_KEY`
+* `SERVER_IP`
+* `SERVER_USER`
+* `SERVER_ENV_VARIABLES`
+
+On each push to `main`:
+
+1. Code is synced to the server
+2. Environment variables are injected
+3. Dependencies are installed
+4. App is restarted using PM2
+
+---
+
+## API Documentation (Swagger)
+
+Swagger documentation is auto-generated using `swagger-autogen`.
+
+Access it at:
+
+```
+http://api.myminibudget.com/
 ```
 
-Replace `[REPO_URL]` with the actual URL of your repository. The README now includes information about the automated deployment process and the auto-generated API documentation using Swagger.
+Swagger UI is served directly by the Express app.
+
+---
+
+## Endpoints Overview
+
+### Auth
+
+* `POST /auth/login`
+
+### Users
+
+* `POST /users`
+* `DELETE /users/:id`
+
+### Transactions
+
+* `GET /transactions`
+* `POST /transactions`
+* `PUT /transactions/:id`
+* `DELETE /transactions/:id`
+
+### Sync
+
+* `GET /transactions/since/:timestamp`
+* `POST /transactions/sync`
+
+---
+
+## Security
+
+* JWT-based authentication
+* Passwords hashed before storage
+* User-scoped queries
+* Soft deletes prevent data loss
+* Input validation on all endpoints
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+Guidelines:
+
+* Write tests for new behavior
+* Follow existing sync rules
+* Keep changes incremental
+
+---
+
+## License
+
+MIT License

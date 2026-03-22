@@ -1,100 +1,115 @@
 import chai from 'chai';
-import chaiHttp from 'chai-http';
+import request from 'supertest';
 import app from '../index.js';
 import sequelize from './testDbConnection.js';
 
 const { expect } = chai;
-chai.use(chaiHttp);
-
 
 describe('Users API', () => {
+  let createdUserId;
+  let testUsername;
+  let token;
 
-    beforeEach(async () => {
-        sequelize.authenticate();
-        // Set up database state, e.g., add test data
-    });
+  before(async () => {
+    await sequelize.authenticate();
+  });
 
-    let createdUserId;  // Store the ID of the created user for subsequent tests
-    let testUsername;   // Store the username for later tests
-    let token;
-    // Test for POST a new user
-    it('should POST a new user', (done) => {
-        testUsername = "testUser" + Date.now();  // Make username unique/dynamic
-        const user = {
-            username: testUsername,
-            password: "testPass123"
-        };
-        chai.request(app)
-            .post('/users')
-            .send(user)
-            .end((err, res) => {
-                expect(res).to.have.status(201);
-                expect(res.body).to.be.a('object');
-                expect(res.body).to.have.property('username', testUsername); // Use the dynamic username here
-                createdUserId = res.body.id;
-                done();
-            });
-    });
+  it('should POST a new user', async () => {
+    testUsername = 'testUser_' + Date.now();
 
-    it('should Login a new user', (done) => {
-        const userCredentials = {  // these are login credentials
-            username: testUsername,  // this should already be defined and created from the previous registration test
-            password: "testPass123"
-        };
-        chai.request(app)
-            .post('/auth/login')  // I'm assuming this is the correct endpoint
-            .send(userCredentials)
-            .end((err, res) => {
-                expect(res).to.have.status(200); // 200 OK is the typical response for successful login
-                expect(res.body).to.be.a('object');
-                expect(res.body).to.have.property('token');  // expect a token in response
-    
-                token = res.body.token;  // save the token for later use in other tests
-    
-                done();
-            });
-    });
+    const res = await request(app)
+      .post('/users')
+      .send({
+        username: testUsername,
+        password: 'testPass123'
+      });
 
-    // Test for GET a user by ID
-    it('should GET the created user by ID', (done) => {
-        chai.request(app)
-            .get(`/users/${createdUserId}`)
-            .set('Authorization', `Bearer ${token}`)  // add the token to the request headers
-            .end((err, res) => {
-                expect(res).to.have.status(200);
-                expect(res.body).to.be.a('object');
-                expect(res.body).to.have.property('username', testUsername);
-                done();
-            });
-    });
+    expect(res.status).to.equal(201);
+    expect(res.body).to.have.property('username', testUsername);
 
-    // Test for UPDATE user details
-    it('should UPDATE the created user\'s details', (done) => {
-        const updatedData = {
-            username: "updatedUser"
-        };
-        chai.request(app)
-            .put(`/users/${createdUserId}`)
-            .set('Authorization', `Bearer ${token}`)  // add the token to the request headers
-            .send(updatedData)
-            .end((err, res) => {
-                expect(res).to.have.status(200);
-                expect(res.body).to.be.a('object');
-                expect(res.body).to.have.property('message', 'User updated successfully');
-                done();
-            });
-    });
+    createdUserId = res.body.id;
+  });
 
+  it('should login the new user', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .send({
+        username: testUsername,
+        password: 'testPass123'
+      });
 
-    // Test for DELETE the created user
-    it('should DELETE the created user', (done) => {
-        chai.request(app)
-            .delete(`/users/${createdUserId}`)
-            .set('Authorization', `Bearer ${token}`)  // add the token to the request headers
-            .end((err, res) => {
-                expect(res).to.have.status(200);
-                // Optionally, add another request here to ensure the user no longer exists
-                done();
-            });
-    });
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property('token');
+
+    token = res.body.token;
+  });
+
+  it('should GET the created user by ID', async () => {
+    const res = await request(app)
+      .get(`/users/${createdUserId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property('username', testUsername);
+  });
+
+  it('should UPDATE the user', async () => {
+    const res = await request(app)
+      .put(`/users/${createdUserId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        username: 'updatedUser'
+      });
+
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property(
+      'message',
+      'User updated successfully'
+    );
+  });
+
+  it('should reject access to another user profile', async () => {
+    const otherUsername = 'otherUser_' + Date.now();
+
+    const createRes = await request(app)
+      .post('/users')
+      .send({
+        username: otherUsername,
+        password: 'testPass123'
+      });
+
+    const res = await request(app)
+      .get(`/users/${createRes.body.id}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).to.equal(403);
+  });
+
+  it('should DELETE the user even when transactions exist', async () => {
+    const txRes = await request(app)
+      .post('/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        date: '2024-01-01T00:00:00.000Z',
+        amount: 50,
+        type: 'expense',
+        description: 'Cleanup check'
+      });
+
+    expect(txRes.status).to.equal(201);
+
+    const res = await request(app)
+      .delete(`/users/${createdUserId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).to.equal(200);
+  });
+
+  it('should return not found for the deleted user', async () => {
+    const res = await request(app)
+      .get(`/users/${createdUserId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).to.equal(404);
+  });
 });

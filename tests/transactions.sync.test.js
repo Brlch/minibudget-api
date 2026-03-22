@@ -57,6 +57,7 @@ describe('Transactions Sync API (push)', () => {
           date: new Date().toISOString(),
           amount: 42,
           type: 'expense',
+          category: 'Food',
           description: 'Pushed from client',
         },
       ],
@@ -74,6 +75,16 @@ describe('Transactions Sync API (push)', () => {
 
     expect(res.body.created[0]).to.have.property('clientId', 'local-1');
     expect(res.body.created[0]).to.have.property('id');
+
+    const getRes = await request(app)
+      .get('/transactions')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const createdTx = getRes.body.find(tx => tx.id === res.body.created[0].id);
+
+    expect(createdTx).to.exist;
+    expect(createdTx.category).to.equal('Food');
   });
 
   it('should update existing transactions from sync push', async () => {
@@ -97,10 +108,11 @@ describe('Transactions Sync API (push)', () => {
         {
           id: serverId,
           date: new Date().toISOString(),
-          amount: 99,
-          type: 'expense',
-          description: 'Updated from client',
-        },
+        amount: 99,
+        type: 'expense',
+        category: 'Updated Category',
+        description: 'Updated from client',
+      },
       ],
     };
 
@@ -112,6 +124,13 @@ describe('Transactions Sync API (push)', () => {
 
     expect(res.body).to.have.property('updated');
     expect(res.body.updated).to.include(serverId);
+
+    const getRes = await request(app)
+      .get(`/transactions/${serverId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    expect(getRes.body.category).to.equal('Updated Category');
   });
 
   it('should delete existing transactions from sync push', async () => {

@@ -202,6 +202,7 @@ export const syncTransactions = async (req, res) => {
           date: tx.date,
           amount: tx.amount,
           type: tx.type,
+          category: tx.category,
           description: tx.description,
           deletedAt: tx.deletedAt ?? null,
         },
@@ -228,6 +229,7 @@ export const syncTransactions = async (req, res) => {
       date: tx.date,
       amount: tx.amount,
       type: tx.type,
+      category: tx.category,
       description: tx.description,
       userId,
     });

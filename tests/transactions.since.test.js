@@ -74,6 +74,7 @@ describe('Transactions Sync API (since)', () => {
         date: new Date().toISOString(),
         amount: 50,
         type: 'expense',
+        category: 'Utilities',
         description: 'Sync test',
         userId,
         });
@@ -90,6 +91,7 @@ describe('Transactions Sync API (since)', () => {
 
     expect(res.body.transactions.length).to.equal(1);
     expect(res.body.transactions[0].id).to.equal(txId);
+    expect(res.body.transactions[0].category).to.equal('Utilities');
     });
 
     it('should include deleted transactions in sync', async () => {

@@ -24,6 +24,9 @@ export default function initTransactionModel(sequelize) {
       description: {
         type: DataTypes.TEXT
       },
+      category: {
+        type: DataTypes.STRING
+      },
       userId: {
         type: DataTypes.INTEGER,
         references: {

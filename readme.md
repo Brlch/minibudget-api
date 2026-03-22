@@ -76,6 +76,7 @@ The API supports:
 - npm
 - PostgreSQL
 - Git
+- Docker Desktop is the easiest local database path on this machine
 
 ---
 
@@ -117,6 +118,12 @@ The server will start at:
 
 ```
 http://localhost:4000
+```
+
+For the paired Android app running in the emulator, the frontend should point to:
+
+```
+http://10.0.2.2:4000
 ```
 
 ---
@@ -240,6 +247,8 @@ This project follows a **test-first (TDD-style) workflow**.
 npm test
 ```
 
+On Windows, this script is expected to set `NODE_ENV=test` before Mocha starts.
+
 ### Testing Philosophy
 
 * Every endpoint is covered by integration tests
@@ -334,6 +343,7 @@ Guidelines:
 * Write tests for new behavior
 * Follow existing sync rules
 * Keep changes incremental
+* Coordinate payload or auth-contract changes with the app repo
 
 ---
 

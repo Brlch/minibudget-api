@@ -4,6 +4,9 @@
 
 - Repo role: backend API for My Mini Budget
 - Current state: local JWT auth and bi-directional transaction sync are working
+- Production API is live at `https://api.myminibudget.com`
+- Staging API is live at `https://staging-api.myminibudget.com`
+- Main Hetzner host IP: `178.156.185.245`
 - Current branch for upcoming coordinated work: `codex/account-sync-foundation`
 - Main was updated with a sync/test-harness stabilization pass
 
@@ -77,10 +80,16 @@ npm start
   - `DB_DATABASE=minibudget_test`
   - `DB_HOST=127.0.0.1`
   - `PORT=4000`
+- Server deploys use:
+  - production port `4010`
+  - staging port `4011`
+  - Nginx reverse proxy with Let's Encrypt
+  - local PostgreSQL on the Hetzner host
 
 ## Known Gotchas
 
 - This repo uses ESM, but Sequelize CLI migrations are kept as `.cjs`
+- The old `*.nekosds.com` MiniBudget deployment was retired on 2026-03-23
 - On Windows, the test script must set `NODE_ENV` as:
 
 ```powershell

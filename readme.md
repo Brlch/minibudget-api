@@ -38,6 +38,19 @@ It provides authentication, transaction management, budgeting features, and a **
   - Soft-delete aware
 - Fully tested API (Mocha + Chai + Supertest)
 
+## Live Environments
+
+- Production: [https://api.myminibudget.com](https://api.myminibudget.com)
+- Staging: [https://staging-api.myminibudget.com](https://staging-api.myminibudget.com)
+- Main server IP: `178.156.185.245`
+
+Current deploy layout:
+- production app directory: `/var/www/api.myminibudget.com`
+- staging app directory: `/var/www/staging-api.myminibudget.com`
+- production port: `4010`
+- staging port: `4011`
+- Nginx terminates TLS and proxies to the local Node services
+
 ---
 
 ## Architecture Overview
@@ -103,8 +116,18 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 DB_DATABASE=minibudget
 DB_HOST=127.0.0.1
+DB_PORT=5432
 DB_DIALECT=postgres
 ```
+
+Use `.env.example` as the local starting point.
+Use `.env.staging.example` and `.env.production.example` as deployed environment templates.
+
+### Environment modes
+
+- `development`: local dev server and Docker database
+- `test`: integration test mode, no HTTP listener
+- `production`: requires a real `JWT_SECRET` and full DB configuration
 
 ---
 
@@ -120,11 +143,35 @@ The server will start at:
 http://localhost:4000
 ```
 
+Health checks are available at:
+
+```
+http://localhost:4000/health
+```
+
+Readiness and liveness probes are also available at:
+
+```
+http://localhost:4000/health/live
+http://localhost:4000/health/ready
+```
+
+`/health/ready` verifies runtime config, database connectivity, and migration
+metadata before reporting the service ready.
+
+Logging target is controlled with `LOG_TARGET`:
+
+- `console`: default local/dev behavior
+- `external`: forwards structured logs to a runtime adapter
+- `disabled`: suppresses backend log output
+
 For the paired Android app running in the emulator, the frontend should point to:
 
 ```
 http://10.0.2.2:4000
 ```
+
+For real deployed app builds, use the public API domains instead of host-loopback.
 
 ---
 
@@ -247,6 +294,12 @@ This project follows a **test-first (TDD-style) workflow**.
 npm test
 ```
 
+To run the full backend verification plus contract evidence generation:
+
+```bash
+npm run verify
+```
+
 On Windows, this script is expected to set `NODE_ENV=test` before Mocha starts.
 
 ### Testing Philosophy
@@ -331,6 +384,8 @@ Swagger UI is served directly by the Express app.
 * User-scoped queries
 * Soft deletes prevent data loss
 * Input validation on all endpoints
+* Request IDs are attached to every response with `X-Request-Id`
+* Structured request logs make auth and sync failures easier to trace
 
 ---
 

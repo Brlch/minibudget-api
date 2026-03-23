@@ -9,8 +9,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import testProtectedRoutes from './routes/testProtected.js';
+import healthRoutes from './routes/health.js';
+import requestContext from './middlewares/requestContext.js';
+import requestLogger from './middlewares/requestLogger.js';
+import { logger } from './utils/logger.js';
 
 import './config.js';
+import { validateRuntimeEnv } from './config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,11 +61,14 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(requestContext);
+app.use(requestLogger);
 
 // Higher limits keep import and sync payloads from getting rejected in dev.
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: false, limit: '10mb' }));
 
+app.use('/health', healthRoutes);
 app.use('/transactions', transactionsRoutes);
 app.use('/users', usersRoutes);
 app.use('/auth', authRoutes);
@@ -69,10 +77,21 @@ app.use('/test', testProtectedRoutes);
 app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const PORT = process.env.PORT || 4000;
+const runtimeEnv = validateRuntimeEnv(process.env);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    logger.info('startup', {
+      nodeEnv: runtimeEnv.nodeEnv,
+      port: runtimeEnv.appPort,
+      logTarget: runtimeEnv.logTarget,
+      dbHost: process.env.DB_HOST,
+      corsOrigins: Array.from(allowedOrigins),
+      health: {
+        live: `http://localhost:${PORT}/health/live`,
+        ready: `http://localhost:${PORT}/health/ready`,
+      },
+    });
   });
 }
 

@@ -58,14 +58,15 @@ describe('Users API', () => {
       .put(`/users/${createdUserId}`)
       .set('Authorization', `Bearer ${token}`)
       .send({
-        username: 'updatedUser'
+        username: 'updatedUser',
+        dailyBudget: 45.5,
+        currencySymbol: 'S/'
       });
 
     expect(res.status).to.equal(200);
-    expect(res.body).to.have.property(
-      'message',
-      'User updated successfully'
-    );
+    expect(res.body).to.have.property('username', 'updatedUser');
+    expect(res.body).to.have.property('currencySymbol', 'S/');
+    expect(res.body.dailyBudget).to.equal('45.50');
   });
 
   it('should reject access to another user profile', async () => {

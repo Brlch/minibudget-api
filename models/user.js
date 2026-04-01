@@ -19,6 +19,12 @@ export default (sequelize) => {
       defaultValue: null,  // Default value can be set if necessary
       comment: 'Recommended daily budget amount for the user'
     },
+    currencySymbol: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: '$',
+      comment: 'Preferred currency symbol for the user'
+    },
     // Add other fields as necessary
   }, {
     sequelize,

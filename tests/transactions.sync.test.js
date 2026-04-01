@@ -87,6 +87,30 @@ describe('Transactions Sync API (push)', () => {
     expect(createdTx.category).to.equal('Food');
   });
 
+  it('should create transactions even when the client id is a numeric string', async () => {
+    const payload = {
+      transactions: [
+        {
+          id: String(Date.now()),
+          date: new Date().toISOString(),
+          amount: 42.5,
+          type: 'income',
+          category: 'Daily Income',
+          description: 'Daily Income',
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post('/transactions/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send(payload)
+      .expect(200);
+
+    expect(res.body.created).to.have.length(1);
+    expect(String(res.body.created[0].clientId)).to.equal(payload.transactions[0].id);
+  });
+
   it('should update existing transactions from sync push', async () => {
     // create initial transaction on server
     const createRes = await request(app)
@@ -166,6 +190,27 @@ describe('Transactions Sync API (push)', () => {
 
     expect(res.body).to.have.property('deleted');
     expect(res.body.deleted).to.include(serverId);
+  });
+
+  it('should ignore delete requests for large client-only numeric ids', async () => {
+    const payload = {
+      transactions: [
+        {
+          id: String(Date.now()),
+          deletedAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post('/transactions/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send(payload)
+      .expect(200);
+
+    expect(res.body.deleted).to.deep.equal([]);
+    expect(res.body.updated).to.deep.equal([]);
+    expect(res.body.conflicts).to.deep.equal([]);
   });
 
   it('should reject updates with stale updatedAt (conflict)', async () => {

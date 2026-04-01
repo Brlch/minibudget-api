@@ -32,6 +32,7 @@ const app = express();
 const allowedOrigins = new Set([
   'http://api.myminibudget.com',
   'https://api.myminibudget.com',
+  'https://staging-api.myminibudget.com',
   'http://localhost:8081',
   'http://127.0.0.1:8081',
   'http://localhost:4173',
@@ -39,6 +40,9 @@ const allowedOrigins = new Set([
   'http://localhost:19006',
   'http://127.0.0.1:19006'
 ]);
+
+const isLocalOrigin = origin =>
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
 
 const extraOrigins = process.env.CORS_ORIGINS
   ?.split(',')
@@ -49,7 +53,7 @@ extraOrigins?.forEach(origin => allowedOrigins.add(origin));
 
 const corsOptions = {
   origin(origin, callback) {
-    if (allowedOrigins.has(origin) || !origin) {
+    if ((origin && isLocalOrigin(origin)) || allowedOrigins.has(origin) || !origin) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

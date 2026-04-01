@@ -148,25 +148,44 @@ export const syncTransactions = async (req, res) => {
 
   const userId = req.user.id;
 
-  // Helper: check if an ID is a valid numeric DB id
-  const isNumericId = v =>
-    typeof v === 'number' ||
-    (typeof v === 'string' && /^\d+$/.test(v));
+  // Only treat IDs that fit the current integer DB column as server IDs.
+  // Timestamp-like local IDs such as 1774935824272 should remain client IDs.
+  const MAX_DB_ID = 2147483647;
+  const toServerId = value => {
+    if (typeof value === 'number') {
+      return Number.isSafeInteger(value) && value > 0 && value <= MAX_DB_ID
+        ? value
+        : null;
+    }
+
+    if (typeof value === 'string' && /^\d+$/.test(value)) {
+      const parsed = Number(value);
+      return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= MAX_DB_ID
+        ? parsed
+        : null;
+    }
+
+    return null;
+  };
 
   for (const tx of transactions) {
+    const serverId = toServerId(tx.id);
+
     /* ----------------------------------
      * DELETE (only if server ID exists)
      * ---------------------------------- */
-    if (tx.deletedAt && isNumericId(tx.id)) {
-      const count = await Transaction.destroy({
-        where: {
-          id: Number(tx.id),
-          userId,
-        },
-      });
+    if (tx.deletedAt) {
+      if (serverId !== null) {
+        const count = await Transaction.destroy({
+          where: {
+            id: serverId,
+            userId,
+          },
+        });
 
-      if (count > 0) {
-        deleted.push(tx.id);
+        if (count > 0) {
+          deleted.push(tx.id);
+        }
       }
 
       continue;
@@ -175,16 +194,30 @@ export const syncTransactions = async (req, res) => {
     /* ----------------------------------
      * UPDATE (only numeric IDs)
      * ---------------------------------- */
-    if (isNumericId(tx.id)) {
+    if (serverId !== null) {
       const serverTx = await Transaction.findOne({
         where: {
-          id: Number(tx.id),
+          id: serverId,
           userId,
         },
         paranoid: false,
       });
 
       if (!serverTx) {
+        const createdTx = await Transaction.create({
+          date: tx.date,
+          amount: tx.amount,
+          type: tx.type,
+          category: tx.category,
+          description: tx.description,
+          userId,
+        });
+
+        created.push({
+          clientId: tx.id ?? tx.clientId,
+          id: createdTx.id,
+        });
+
         continue;
       }
 
@@ -208,7 +241,7 @@ export const syncTransactions = async (req, res) => {
         },
         {
           where: {
-            id: Number(tx.id),
+            id: serverId,
             userId,
           },
           paranoid: false,

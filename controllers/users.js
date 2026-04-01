@@ -87,14 +87,18 @@ export async function updateUser(req, res) {
     const updatePayload = { ...req.body };
     delete updatePayload.password;
 
-    const updated = await User.update(updatePayload, {
+    const [updatedCount] = await User.update(updatePayload, {
       where: { id: req.params.id }
     });
 
-    if (updated[0] === 0) {
+    if (updatedCount === 0) {
       res.status(404).json({ error: 'User not found' });
     } else {
-      res.status(200).json({ message: 'User updated successfully' });
+      const user = await User.findByPk(req.params.id, {
+        attributes: { exclude: ['password'] }
+      });
+
+      res.status(200).json(user);
     }
   } catch (err) {
     console.error('Error updating user:', err);
